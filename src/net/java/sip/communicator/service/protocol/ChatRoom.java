@@ -20,6 +20,7 @@ package net.java.sip.communicator.service.protocol;
 import java.util.*;
 
 import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.MiscPacketExtension;
 
 /**
  * Represents a chat channel/room/rendez-vous point/ where multiple chat users
@@ -81,6 +82,9 @@ public interface ChatRoom
      * occurs while joining the room.
      */
     public void joinAs(String nickname)
+        throws OperationFailedException;
+
+    public void joinAs(String nickname, byte[] password, MiscPacketExtension misc)
         throws OperationFailedException;
 
     /**
@@ -436,9 +440,9 @@ public interface ChatRoom
     public boolean isPersistent();
 
     /**
-     * Finds private messaging contact by nickname. If the contact doesn't 
+     * Finds private messaging contact by nickname. If the contact doesn't
      * exists a new volatile contact is created.
-     * 
+     *
      * @param name the nickname of the contact.
      * @return the contact instance.
      */

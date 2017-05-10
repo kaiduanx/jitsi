@@ -19,6 +19,12 @@ package net.java.sip.communicator.impl.protocol.sip;
 
 import gov.nist.javax.sip.header.*;
 import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.sip.address.*;
 import javax.sip.header.*;
@@ -94,8 +100,23 @@ public class ConfigHeaders
 
         Request request = (Request)message;
 
+        ToHeader toHeader =
+            (ToHeader) request.getHeader(ToHeader.NAME);
+        String domainName = toHeader.getAddress().getURI().toString();
+        //IP-174
+        if(domainName.contains(";") && domainName.contains("@")) {
+            domainName = domainName.substring(domainName.indexOf("@"), domainName.indexOf(";"));
+            logger.info("Inside attachConfigHeaders Domainname " +domainName);
+        } else {
+            //domainName = domainName.substring(domainName.indexOf("@"));
+            domainName = "";
+            logger.info("Inside attachConfigHeaders Domainname is empty");
+        }
+
         Map<String, String> props
             = protocolProvider.getAccountID().getAccountProperties();
+
+        props.put("DomainName", domainName);
 
         Map<String,Map<String,String>> headers
             = new HashMap<String, Map<String, String>>();
@@ -137,6 +158,13 @@ public class ConfigHeaders
             headerValues.put(name, prefStr);
         }
 
+        CSeqHeader cSeqHeader = (CSeqHeader) request.getHeader(SIPHeaderNames.CSEQ);
+        Long seqNumber = cSeqHeader.getSeqNumber();
+
+        // !XKD! Comment out this for now
+        //DNSServerLookup lookup = new DNSServerLookup();
+        //props.put("LookupServer", lookup.nsLookUp());
+
         // process the found custom headers
         for(Map<String, String> headerValues : headers.values())
         {
@@ -156,9 +184,18 @@ public class ConfigHeaders
                 String name = headerValues.get(ACC_PROPERTY_CONFIG_HEADER_NAME);
                 String value = processParams(
                     headerValues.get(ACC_PROPERTY_CONFIG_HEADER_VALUE),
-                    request);
+                    request, props);
 
                 Header h = request.getHeader(name);
+
+                if (name.equals(SIPHeaderNames.ROUTE)
+                    || name.equals("P-Asserted-Identity"))
+                {
+                    if (seqNumber != 1)
+                    {
+                        continue;
+                    }
+                }
 
                 // makes possible overriding already created headers which
                 // are not custom one
@@ -187,7 +224,8 @@ public class ConfigHeaders
      * @param request the request we are processing
      * @return the value with replaced params
      */
-    private static String processParams(String value, Request request)
+    private static String processParams(String value, Request request,
+        Map<String, String> props)
     {
         if(value.indexOf("${from.address}") != -1)
         {
@@ -199,6 +237,29 @@ public class ConfigHeaders
                 value = value.replace(
                     "${from.address}",
                     fromHeader.getAddress().getURI().toString());
+            }
+        }
+
+        if(value.indexOf("${from.domain}") != -1)
+        {
+            FromHeader fromHeader
+                = (FromHeader)request.getHeader(FromHeader.NAME);
+
+            if(fromHeader != null)
+            {
+                value = value.replace(
+                    "${from.domain}",
+                    fromHeader.getAddress().getURI().toString());
+            }
+
+            if (props.containsKey(ProtocolProviderFactory.DOMAIN))
+            {
+                if (value.contains(props.get(ProtocolProviderFactory.DOMAIN)))
+                {
+                    value = value.replace(props.get(ProtocolProviderFactory.DOMAIN),
+                        props.get(ProtocolProviderFactory.ACCOUNT_UID).substring(
+                        props.get(ProtocolProviderFactory.ACCOUNT_UID).indexOf("@")));
+                }
             }
         }
 
@@ -217,6 +278,14 @@ public class ConfigHeaders
                 {
                     fromAddr
                         = fromAddr.replaceFirst(fromURI.getScheme() + ":", "");
+                }
+
+                if (props.containsKey(ProtocolProviderFactory.DOMAIN))
+                {
+                    fromAddr = fromAddr
+                        .contains(props.get(ProtocolProviderFactory.DOMAIN))
+                            ? fromAddr.replace(props.get(ProtocolProviderFactory.DOMAIN), "")
+                            : fromAddr;
                 }
 
                 // take the userID part
@@ -264,6 +333,104 @@ public class ConfigHeaders
 
                 value = value.replace("${to.userID}", toAddr);
             }
+        }
+
+        if (value.indexOf("${domain}") != -1)
+        {
+            value = value.replace("${domain}", props.get(ProtocolProviderFactory.DOMAIN));
+        }
+
+        if (value.indexOf("${tag}") != -1)
+        {
+            FromHeader fromHeader
+                = (FromHeader)request.getHeader(FromHeader.NAME);
+            value = value.replace("${tag}",fromHeader.getTag());
+        }
+
+        if (value.indexOf("${userID}") != -1)
+        {
+            value = value.replace("${userID}", props.get(ProtocolProviderFactory.USER_ID).split("@")[0]);
+        }
+
+        if (value.indexOf("${user.domain}") != -1)
+        {
+            ToHeader toHeader = (ToHeader) request.getHeader(ToHeader.NAME);
+            URI toURI = toHeader.getAddress().getURI();
+            String toAddr = toURI.toString();
+            int endIndex = toAddr.indexOf("@") > toAddr.lastIndexOf(":") ? toAddr.indexOf(";") : toAddr.lastIndexOf(":");
+            String userDomain = toAddr.substring(toAddr.indexOf("@") + 1, endIndex);
+            value = value.replace("${user.domain}",userDomain);
+        }
+
+        if (value.indexOf("${from.fqdn}") != -1)
+        {
+            FromHeader fromHeader
+                = (FromHeader)request.getHeader(FromHeader.NAME);
+
+            if(fromHeader != null)
+            {
+                value = value.replace(
+                    "${from.fqdn}",
+                    fromHeader.getAddress().getURI().toString());
+            }
+
+            try {
+                StringBuffer output = new StringBuffer();
+                Process p = Runtime.getRuntime().exec("hostname -A");
+	        p.waitFor();
+		BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = "";
+                while ((line = reader.readLine())!= null) {
+		    output.append(line + "\n");
+		}
+
+                String hostname = output.toString();
+                hostname = hostname.trim().split(" ")[0];
+                value = value.replace(value.substring(value.indexOf("@") + 1, value.indexOf(";")), hostname);
+                if (value.contains("_")) {
+                    value = value.replace(value.substring(value.indexOf("_"), value.indexOf("@")), "");
+               }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if(value.indexOf("${from.ip}") != -1)
+        {
+            FromHeader fromHeader
+                = (FromHeader)request.getHeader(FromHeader.NAME);
+
+            String fromURI = fromHeader.getAddress().getURI().toString();
+            if(fromHeader != null)
+            {
+                value = value.replace("${from.ip}", fromURI);
+            }
+
+            try {
+                String localHost = InetAddress.getLocalHost().getHostAddress();
+                if (props.containsKey(ProtocolProviderFactory.DOMAIN)
+                    && value.contains(props.get(ProtocolProviderFactory.DOMAIN)))
+                {
+                    value = value.replace(props.get(ProtocolProviderFactory.DOMAIN), "@" + localHost);
+                } else {
+                    value = value.replace(fromURI.split("@")[1], "@" + localHost);
+                }
+            } catch (UnknownHostException e) {
+                logger.error("Host ip could not be retrieved", e);
+            }
+        }
+
+        if (value.indexOf("${lookup.srv}") != -1)
+        {
+            value = value.replace("${lookup.srv}",props.get("LookupServer"));
+        }
+
+        // Needed of IMS
+        if(value.indexOf("+") != -1 && Boolean.parseBoolean(props.get(ProtocolProviderFactory.PLUS_DISABLED)))
+        {
+            logger.info("Replacing + character !!");
+            value = value.replace("+","");
         }
 
         return value;

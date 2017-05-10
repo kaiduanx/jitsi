@@ -25,6 +25,7 @@ import net.java.sip.communicator.impl.protocol.irc.exception.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.MiscPacketExtension;
 
 /**
  * Represents a chat channel/room, where multiple chat users could rally and
@@ -435,6 +436,11 @@ public class ChatRoomIrcImpl
                 + "nick change is not limited to a single chat room.");
         }
         this.join(password);
+    }
+
+    public void joinAs(String nickname, byte[] password, MiscPacketExtension misc)
+        throws OperationFailedException
+    {
     }
 
     /**

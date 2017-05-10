@@ -23,6 +23,7 @@ import java.util.*;
 
 import net.java.sip.communicator.service.protocol.jabber.*;
 import org.jivesoftware.smack.packet.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.MiscPacketExtension;
 
 /**
  * A straightforward extension of the IQ. A <tt>JingleIQ</tt> object is created
@@ -63,8 +64,8 @@ public class JingleIQ extends IQ
      * The name of the argument that contains the session id.
      */
     public static final String SID_ATTR_NAME = "sid";
-    
-    
+
+
     /**
      * The <tt>JingleAction</tt> that describes the purpose of this
      * <tt>jingle</tt> element.
@@ -103,11 +104,16 @@ public class JingleIQ extends IQ
     private SessionInfoPacketExtension sessionInfo;
 
     /**
+     * The Misc parameters of the conference represented by this IQ.
+     */
+    private MiscPacketExtension misc;
+
+    /**
      * The list of "content" elements included in this IQ.
      */
     private final List<ContentPacketExtension> contentList
             = new ArrayList<ContentPacketExtension>();
-    
+
     /**
      * Returns the XML string of this Jingle IQ's "section" sub-element.
      *
@@ -137,7 +143,7 @@ public class JingleIQ extends IQ
 
         CharSequence extensionsXMLSeq = getExtensionsXML();
         String extensionsXML = extensionsXMLSeq.toString();
-        
+
         if ((contentList.size() == 0)
                 && (reason == null)
                 && (sessionInfo == null)
@@ -170,6 +176,8 @@ public class JingleIQ extends IQ
                 bldr.append(extensionsXML);
 
             bldr.append("</" + ELEMENT_NAME + ">");
+            if (misc != null)
+                bldr.append(misc.toXML());
         }
 
         return bldr.toString();
@@ -307,6 +315,22 @@ public class JingleIQ extends IQ
     public ReasonPacketExtension getReason()
     {
         return reason;
+    }
+
+    /**
+     * @return the MiscPacketExtension
+    */
+    public MiscPacketExtension getMisc()
+    {
+        return misc;
+    }
+
+    /**
+     * @param misc the MiscPacketExtension to set
+    */
+    public void setMisc(MiscPacketExtension misc)
+    {
+        this.misc = misc;
     }
 
     /**

@@ -76,6 +76,12 @@ public class MockChatRoomMember
         return chatRoom.getParentProvider();
     }
 
+    @Override
+    public String getRoutingId()
+    {
+        return null;
+    }
+
     /**
      * Returns the contact identifier representing this contact. In protocols
      * like IRC this method would return the same as getName() but in others

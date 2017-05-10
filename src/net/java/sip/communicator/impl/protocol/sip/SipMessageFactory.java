@@ -769,9 +769,12 @@ public class SipMessageFactory
         ToHeader toHeader = null;
         try
         {
+            Address fromAddress = protocolProvider
+                .parseAddressString(protocolProvider
+                .getAccountID().getAccountProperties().get("caller"));
             // FromHeader
-            fromHeader = headerFactory.createFromHeader(
-                    protocolProvider.getOurSipAddress(toAddress), localTag);
+            fromHeader = headerFactory.createFromHeader(fromAddress, localTag);
+            //        protocolProvider.getOurSipAddress(toAddress), localTag);
 
             // ToHeader
             toHeader = headerFactory.createToHeader(toAddress, null);

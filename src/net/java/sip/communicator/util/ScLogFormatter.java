@@ -38,7 +38,7 @@ public class ScLogFormatter
      * Program name logging property name
      */
     private static final String PROGRAM_NAME_PROPERTY = ".programname";
-    
+
     /**
      * Disable timestamp logging property name.
      */
@@ -49,7 +49,7 @@ public class ScLogFormatter
      * Line separator used by current platform
      */
     private static String lineSeparator = System.getProperty("line.separator");
-    
+
     /**
      * Two digit <tt>DecimalFormat</tt> instance, used to format datetime
      */
@@ -70,15 +70,17 @@ public class ScLogFormatter
      */
     private static boolean timestampDisabled = false;
 
+    private static String hostname;
+
     /**
-     * The default constructor for <tt>ScLogFormatter</tt> which loads 
+     * The default constructor for <tt>ScLogFormatter</tt> which loads
      * program name property from logging.properties file, if it exists
      */
     public ScLogFormatter()
     {
         loadConfigProperties();
     }
-    
+
     /**
      * Format the given LogRecord.
      * @param record the log record to be formatted.
@@ -88,8 +90,8 @@ public class ScLogFormatter
     public synchronized String format(LogRecord record)
     {
         StringBuffer sb = new StringBuffer();
-        
-        
+
+
         if (programName != null)
         {
             // Program name
@@ -110,21 +112,24 @@ public class ScLogFormatter
             int seconds = cal.get(Calendar.SECOND);
             int millis = cal.get(Calendar.MILLISECOND);
 
-            sb.append(year).append('-');
+            sb.append("[" + year).append('-');
             sb.append(twoDigFmt.format(month)).append('-');
             sb.append(twoDigFmt.format(day)).append(' ');
             sb.append(twoDigFmt.format(hour)).append(':');
             sb.append(twoDigFmt.format(minutes)).append(':');
             sb.append(twoDigFmt.format(seconds)).append('.');
-            sb.append(threeDigFmt.format(millis)).append(' ');
+            sb.append(threeDigFmt.format(millis) + "]").append(' ');
         }
 
         //log level
-        sb.append(record.getLevel().getLocalizedName());
+        sb.append("[" + record.getLevel().getLocalizedName() + "]");
         sb.append(": ");
 
+        //rtc server details
+        sb.append("[rtcSrvr=" + hostname() + "] ");
+
         // Thread ID
-        sb.append("[" + record.getThreadID() + "] ");
+        sb.append("[" + record.getThreadID() + "] [");
 
         //caller method
         int lineNumber = inferCaller(record);
@@ -152,7 +157,7 @@ public class ScLogFormatter
             else
                 sb.append("()");
         }
-        sb.append(" ");
+        sb.append("] ");
         sb.append(record.getMessage());
         sb.append(lineSeparator);
         if (record.getThrown() != null)
@@ -200,7 +205,7 @@ public class ScLogFormatter
             }
             ix++;
         }
-        // Now search for the first frame 
+        // Now search for the first frame
         // before the SIP Communicator Logger class.
         while (ix < stack.length)
         {
@@ -250,5 +255,37 @@ public class ScLogFormatter
         String cname = ScLogFormatter.class.getName();
         programName = manager.getProperty(cname + PROGRAM_NAME_PROPERTY);
     }
-    
+
+    public static String hostname()
+    {
+        if (hostname != null) {
+          return hostname;
+        }
+
+        String result = "";
+        InputStream inputStream = null;
+        try {
+            Properties prop = new Properties();
+            String propFileName = "/etc/prosody/conf.d/component.cfg.lua";
+            File file = new File(propFileName);
+
+            if (file.exists())
+            {
+                inputStream = new FileInputStream(propFileName);
+                prop.load(inputStream);
+                String rtc_server_fqdn = prop.getProperty("rtc_server_fqdn");
+                result = rtc_server_fqdn;
+                inputStream.close();
+            }
+            else
+            {
+                result = null;
+            }
+        }
+        catch (Exception e)
+        {
+        }
+        hostname = result;
+        return hostname;
+    }
 }

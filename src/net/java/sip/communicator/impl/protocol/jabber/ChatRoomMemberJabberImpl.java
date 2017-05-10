@@ -118,6 +118,12 @@ public class ChatRoomMemberJabberImpl
         return jabberID;
     }
 
+    @Override
+    public String getRoutingId()
+    {
+        return null;
+    }
+
     /**
      * Returns the contact identifier representing this contact.
      *

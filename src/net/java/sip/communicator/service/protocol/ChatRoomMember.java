@@ -35,6 +35,8 @@ public interface ChatRoomMember
      */
     public ChatRoom getChatRoom();
 
+    public String getRoutingId();
+
     /**
      * Returns the protocol provider instance that this member has originated
      * in.

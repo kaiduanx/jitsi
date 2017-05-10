@@ -204,6 +204,16 @@ public class Logger
         loggerDelegate.info(msg!=null?msg.toString():"null");
     }
 
+    public void audit(Object msg)
+    {
+        loggerDelegate.log(AuditLevel.AUDIT,msg!=null?msg.toString():"null");
+    }
+
+    public void audit(Object msg, Throwable t)
+    {
+        loggerDelegate.log(AuditLevel.AUDIT, msg!=null?msg.toString():"null", t);
+    }
+
     /**
      * Log a message, with associated Throwable information.
      * <p>
@@ -304,6 +314,11 @@ public class Logger
     public void setLevelError()
     {
         setLevel(Level.SEVERE);
+    }
+
+    public void setLevelAudit()
+    {
+        setLevel(AuditLevel.AUDIT);
     }
 
     /**

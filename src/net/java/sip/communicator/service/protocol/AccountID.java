@@ -24,6 +24,7 @@ import net.java.sip.communicator.service.credentialsstorage.*;
 
 import org.jitsi.service.neomedia.*;
 import org.osgi.framework.*;
+import org.jitsi.util.StringUtils;
 
 /**
  * The AccountID is an account identifier that, uniquely represents a specific
@@ -191,6 +192,9 @@ public abstract class AccountID
      */
     public String getUserID()
     {
+        if ( accountProperties.containsKey("caller") &&
+            !StringUtils.isNullOrEmpty(getAccountPropertyString("caller")) )
+            return accountProperties.get("caller");
         return userID;
     }
 

@@ -563,6 +563,27 @@ public class CallSipImpl
         if (alternativeIMPPAddress != null)
             peer.setAlternativeIMPPAddress(alternativeIMPPAddress);
 
+        SIPHeader routeHeader = (SIPHeader) invite.getHeader("Record-Route");
+        if (routeHeader != null)
+        {
+            String routeAddress = routeHeader.getValue().split(";")[0].split(":")[1];
+            getProtocolProvider().getAccountID().putAccountProperty("RouteAddress", routeAddress);
+        }
+        FromHeader fromHeader = (FromHeader) invite.getHeader(From.NAME);
+        Address fromAddress = fromHeader.getAddress();
+        javax.sip.address.URI fromURI = fromAddress.getURI();
+        if (fromURI != null && fromURI.isSipURI())
+        {
+            SipURI sipURI = (SipURI) fromURI;
+            getProtocolProvider().getAccountID().putAccountProperty("caller", sipURI.getUser());
+        }
+        else if (fromURI != null && (fromURI instanceof TelURL))
+        {
+            TelURL telURL = (TelURL) fromURI;
+            getProtocolProvider().getAccountID().putAccountProperty("caller",
+                (fromURI.toString().contains("+") ? "+" : "") + telURL.getPhoneNumber());
+        }
+
         OperationSetJitsiMeetToolsSipImpl jitsiMeetTools
             = (OperationSetJitsiMeetToolsSipImpl) getProtocolProvider()
                     .getOperationSet(OperationSetJitsiMeetTools.class);

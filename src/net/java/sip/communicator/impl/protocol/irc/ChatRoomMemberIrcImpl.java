@@ -157,6 +157,12 @@ public class ChatRoomMemberIrcImpl
         return this.parentProvider;
     }
 
+    @Override
+    public String getRoutingId()
+    {
+        return null;
+    }
+
     /**
      * Returns the contact identifier representing this contact. For IRC
      * this method returns the same as getName().

@@ -21,6 +21,7 @@ import java.util.*;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.impl.protocol.jabber.extensions.MiscPacketExtension;
 
 /**
  *
@@ -182,6 +183,11 @@ public class MockChatRoom
                 this,
                 LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_JOINED,
                 null);
+    }
+
+    public void joinAs(String nickname, byte[] password, MiscPacketExtension misc)
+        throws OperationFailedException
+    {
     }
 
     /**

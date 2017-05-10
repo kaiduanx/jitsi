@@ -160,6 +160,12 @@ public class CallPeerSipImpl
      */
     public String getAddress()
     {
+        URI uri = peerAddress.getURI();
+        if (uri != null && (uri instanceof TelURL) ) {
+            TelURL telURL = (TelURL) uri;
+            String number = ((uri.toString().contains("+")) ? "+" : "") + telURL.getPhoneNumber();
+            return number + "@" + getCall().getProtocolProvider().getAccountID().getAccountPropertyString("RouteAddress");
+        }
         SipURI sipURI = (SipURI) peerAddress.getURI();
 
         return sipURI.getUser() + "@" + sipURI.getHost();
@@ -1000,6 +1006,11 @@ public class CallPeerSipImpl
         boolean failed = (reasonCode != HANGUP_REASON_NORMAL_CLEARING);
 
         CallPeerState peerState = getState();
+        if (HANGUP_REASON_BUSY_HERE == reasonCode) {
+            logger.info("Inside Hangup...Send Busy Here : " + reasonCode);
+            setDisconnectedState(failed, reason);
+            sayBusyHere();
+        }
         if (peerState.equals(CallPeerState.CONNECTED)
             || CallPeerState.isOnHold(peerState))
         {

@@ -119,7 +119,23 @@ public abstract class AbstractOperationSetBasicTelephony
         throws OperationFailedException,
                ParseException
     {
-        return createCall(uri, null);
+        CallConference conference = null;
+        return createCall(uri, conference);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Forwards to
+     * {@link OperationSetBasicTelephony#createCall(String, String, CallConference)}
+     * with <tt>null</tt> as the <tt>CallConference</tt> argument.
+     */
+    public Call createCall(String uri, String from)
+        throws OperationFailedException,
+               ParseException
+    {
+        CallConference conference = null;
+        return createCall(uri, from, conference);
     }
 
     /**

@@ -112,6 +112,12 @@ public class MockOperationSetBasicTelephony
         return createCall(callee, conference);
     }
 
+    public Call createCall(String callee, String from, CallConference conference)
+        throws OperationFailedException
+    {
+        return null;
+    }
+
     private Call createNewCall(String address)
     {
         MockCall newCall = new MockCall(protocolProvider);

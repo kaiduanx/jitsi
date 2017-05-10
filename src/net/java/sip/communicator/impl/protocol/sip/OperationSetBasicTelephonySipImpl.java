@@ -142,6 +142,32 @@ public class OperationSetBasicTelephonySipImpl
     }
 
     /**
+     * Creates a new <tt>Call</tt> and invites a specific <tt>CallPeer</tt> to
+     * it given by her <tt>String</tt> URI.
+     *
+     * @param callee the address of the callee who we should invite to a new
+     * <tt>Call</tt>
+     * @param from the address of the caller
+     * @param conference the <tt>CallConference</tt> in which the newly-created
+     * <tt>Call</tt> is to participate
+     * @return a newly created <tt>Call</tt>. The specified <tt>callee</tt> is
+     * available in the <tt>Call</tt> as a <tt>CallPeer</tt>
+     * @throws OperationFailedException with the corresponding code if we fail
+     * to create the call
+     * @throws ParseException if <tt>callee</tt> is not a valid SIP address
+     * <tt>String</tt>
+     */
+    public Call createCall(String callee, String from, CallConference conference)
+        throws OperationFailedException,
+               ParseException
+    {
+        Address toAddress = protocolProvider.parseAddressString(callee);
+        protocolProvider.getAccountID().putAccountProperty("caller", from);
+
+        return createOutgoingCall(toAddress, null, conference);
+    }
+
+    /**
      * Initializes a new outgoing <tt>Call</tt> with no peers in it. Intended
      * for use by other <tt>OperationSet</tt>s willing to initialize
      * <tt>Call</tt>s and willing to control their establishment in ways

@@ -18,6 +18,7 @@
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.util.*;
+import java.text.ParseException;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
@@ -169,6 +170,16 @@ public class OperationSetBasicTelephonyJabberImpl
 
     /**
      * {@inheritDoc}
+    */
+    public Call createCall(String callee, String from, CallConference conference)
+        throws OperationFailedException,
+               ParseException
+    {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
      *
      * Creates a new <tt>CallJabberImpl</tt> and initiates a jingle session
      * to the JID obtained from the <tt>uri</tt> of <tt>cd</tt>.
@@ -183,9 +194,9 @@ public class OperationSetBasicTelephonyJabberImpl
         throws OperationFailedException
     {
         final CallJabberImpl call = new CallJabberImpl(this);
-        
+
         ((ChatRoomJabberImpl) chatRoom).addConferenceCall(call);
-        
+
         call.addCallChangeListener(
                 new CallChangeListener()
                 {
@@ -387,7 +398,7 @@ public class OperationSetBasicTelephonyJabberImpl
         // If there's no fullCalleeURI specified we'll discover the most
         // connected one with highest priority.
         if (fullCalleeURI == null)
-            fullCalleeURI = 
+            fullCalleeURI =
                 discoverFullJid(calleeAddress);
 
         if (fullCalleeURI == null)

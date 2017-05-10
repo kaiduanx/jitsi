@@ -18,6 +18,7 @@
 package net.java.sip.communicator.impl.protocol.gibberish;
 
 import java.util.*;
+import java.text.ParseException;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -104,6 +105,16 @@ public class OperationSetBasicTelephonyGibberishImpl
         fireCallEvent(CallEvent.CALL_INITIATED, call);
 
         return call;
+    }
+
+    /**
+    * {@inheritDoc}
+    */
+    public Call createCall(String callee, String from, CallConference conference)
+        throws OperationFailedException,
+               ParseException
+    {
+        return null;
     }
 
     /**

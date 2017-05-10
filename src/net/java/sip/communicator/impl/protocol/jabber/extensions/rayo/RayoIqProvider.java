@@ -17,6 +17,7 @@
  */
 package net.java.sip.communicator.impl.protocol.jabber.extensions.rayo;
 
+import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.*;
 import org.jitsi.util.*;
 import org.jivesoftware.smack.packet.*;
@@ -41,6 +42,9 @@ public class RayoIqProvider
      */
     public final static String NAMESPACE = "urn:xmpp:rayo:1";
 
+    private static final Logger logger
+        = Logger.getLogger(RayoIqProvider.class);
+
     /**
      * Registers this IQ provider into given <tt>ProviderManager</tt>.
      * @param providerManager the <tt>ProviderManager</tt> to which this
@@ -51,6 +55,24 @@ public class RayoIqProvider
         // <dial>
         providerManager.addIQProvider(
             DialIq.ELEMENT_NAME,
+            NAMESPACE,
+            this);
+
+        // <hold>
+        providerManager.addIQProvider(
+            HoldIq.ELEMENT_NAME,
+            NAMESPACE,
+            this);
+
+        // <unhold>
+        providerManager.addIQProvider(
+            UnHoldIq.ELEMENT_NAME,
+            NAMESPACE,
+            this);
+
+        // <merge>
+        providerManager.addIQProvider(
+            MergeIq.ELEMENT_NAME,
             NAMESPACE,
             this);
 
@@ -101,6 +123,9 @@ public class RayoIqProvider
         RayoIq iq;
         DialIq dial;
         RefIq ref;
+        HoldIq hold;
+        UnHoldIq unHold;
+        MergeIq merge;
         //End end = null;
 
         if (DialIq.ELEMENT_NAME.equals(rootElement))
@@ -130,6 +155,18 @@ public class RayoIqProvider
         {
             iq = new HangUp();
         }
+        else if (HoldIq.ELEMENT_NAME.equals(rootElement))
+        {
+            iq = hold = new HoldIq();
+        }
+        else if (UnHoldIq.ELEMENT_NAME.equals(rootElement))
+        {
+            iq = unHold = new UnHoldIq();
+        }
+        else if (MergeIq.ELEMENT_NAME.equals(rootElement))
+        {
+            iq = merge = new MergeIq();
+        }
         /*else if (End.ELEMENT_NAME.equals(rootElement))
         {
             iq = end = new End();
@@ -141,6 +178,7 @@ public class RayoIqProvider
 
         boolean done = false;
         HeaderExtension header = null;
+        MiscPacketExtension misc = null;
         //ReasonExtension reason = null;
 
         while (!done)
@@ -163,6 +201,14 @@ public class RayoIqProvider
                             iq.addExtension(header);
 
                             header = null;
+                        }
+                    }
+                    else if (MiscPacketExtension.ELEMENT_NAME.equals(name))
+                    {
+                        if (misc != null)
+                        {
+                            iq.addMisc(misc);
+                            misc = null;
                         }
                     }
                     /*else if (End.isValidReason(name))
@@ -196,6 +242,18 @@ public class RayoIqProvider
                             "", HeaderExtension.VALUE_ATTR_NAME);
 
                         header.setValue(valueAttr);
+                    }
+                    else if (MiscPacketExtension.ELEMENT_NAME.equals(name))
+                    {
+                        misc = new MiscPacketExtension(
+                            parser.getAttributeValue("", MiscPacketExtension.EVENT_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.TRACEID_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.ROOT_NODEID_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.CHILD_NODEID_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.HOST_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.TO_ROUTING_ID_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.ROOM_TOKEN_ATTR_NAME),
+                            parser.getAttributeValue("", MiscPacketExtension.ROOM_TOKEN_EXPIRY_TIME_ATTR_NAME));
                     }
                     /*else if (End.isValidReason(name))
                     {
@@ -236,6 +294,8 @@ public class RayoIqProvider
          */
         private final String elementName;
 
+        private MiscPacketExtension misc;
+
         /**
          * Creates new instance of <tt>RayoIq</tt>.
          *
@@ -244,6 +304,17 @@ public class RayoIqProvider
         protected RayoIq(String elementName)
         {
             this.elementName = elementName;
+        }
+
+        public boolean addMisc(MiscPacketExtension misc)
+        {
+            this.misc = misc;
+            return true;
+        }
+
+        public MiscPacketExtension getMisc()
+        {
+            return misc;
         }
 
         /**
@@ -276,9 +347,13 @@ public class RayoIqProvider
                     xml.append(extension.toXML());
                 }
                 xml.append("</").append(elementName).append(">");
+                if(getMisc() != null)
+                    xml.append(getMisc().toXML());
             }
             else
             {
+                if(getMisc() != null)
+                    xml.append(getMisc().toXML());
                 xml.append("/>");
             }
 
@@ -337,6 +412,132 @@ public class RayoIqProvider
 
             headerExt.setValue(value);
         }
+    }
+
+    /**
+     * The 'unhold' IQ used to resume a call which is on hold.
+     */
+    public static class UnHoldIq
+        extends RayoIq
+    {
+
+        /**
+         * The name of XML element for this IQ.
+         */
+        public static final String ELEMENT_NAME = "unhold";
+
+        /**
+         * Creates new instance of <tt>UnHoldIq</tt>.
+         */
+        public UnHoldIq()
+        {
+            super(UnHoldIq.ELEMENT_NAME);
+        }
+
+        /**
+         * Creates new <tt>UnHoldIq</tt>.
+         * @return new <tt>UnHoldIq</tt>.
+         */
+        public static UnHoldIq create()
+        {
+            UnHoldIq unHoldIq = new UnHoldIq();
+
+            return unHoldIq;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void printAttributes(StringBuilder out)
+        {
+            out.toString();
+        }
+
+    }
+
+    /**
+     * The 'hold' IQ used to put a call on hold.
+     */
+    public static class HoldIq
+        extends RayoIq
+    {
+
+        /**
+         * The name of XML element for this IQ.
+         */
+        public static final String ELEMENT_NAME = "hold";
+
+        /**
+         * Creates new instance of <tt>HoldIq</tt>.
+         */
+        public HoldIq()
+        {
+            super(HoldIq.ELEMENT_NAME);
+        }
+
+        /**
+         * Creates new <tt>HoldIq</tt>.
+         * @return new <tt>HoldIq</tt>.
+         */
+        public static HoldIq create()
+        {
+            HoldIq holdIq = new HoldIq();
+
+            return holdIq;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void printAttributes(StringBuilder out)
+        {
+            out.toString();
+        }
+
+    }
+
+    /**
+     * The 'merge' IQ used to merge multiple calls.
+     */
+    public static class MergeIq
+        extends RayoIq
+    {
+
+        /**
+         * The name of XML element for this IQ.
+         */
+        public static final String ELEMENT_NAME = "merge";
+
+        /**
+         * Creates new instance of <tt>MergeIq</tt>.
+         */
+        public MergeIq()
+        {
+            super(MergeIq.ELEMENT_NAME);
+        }
+
+        /**
+         * Creates new <tt>MergeIq</tt>.
+         * @return new <tt>MergeIq</tt>.
+         */
+        public static MergeIq create()
+        {
+            MergeIq mergeIq = new MergeIq();
+
+            return mergeIq;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void printAttributes(StringBuilder out)
+        {
+            out.toString();
+        }
+
     }
 
     /**

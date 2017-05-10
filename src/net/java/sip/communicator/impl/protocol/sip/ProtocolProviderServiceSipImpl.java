@@ -248,7 +248,7 @@ public class ProtocolProviderServiceSipImpl
     /**
      * Validates the contact identifier and returns an error message if
      * applicable and a suggested correction
-     * 
+     *
      * @param contactId the contact identifier to validate
      * @param result Must be supplied as an empty a list. Implementors add
      *            items:
@@ -1282,7 +1282,85 @@ public class ProtocolProviderServiceSipImpl
     public ArrayList<ViaHeader> getLocalViaHeaders(Address intendedDestination)
         throws OperationFailedException
     {
-        return getLocalViaHeaders((SipURI)intendedDestination.getURI());
+        javax.sip.address.URI uri = intendedDestination.getURI();
+        if ( !uri.isSipURI() && (uri instanceof TelURL) ) {
+            return getLocalViaHeaders((TelURL)uri);
+        }
+        return getLocalViaHeaders((SipURI)uri);
+    }
+
+    public ArrayList<ViaHeader> getLocalViaHeaders(TelURL intendedDestination)
+            throws OperationFailedException
+    {
+        ArrayList<ViaHeader> viaHeaders = new ArrayList<ViaHeader>();
+
+        try
+        {
+            InetSocketAddress targetAddress =
+                        getIntendedDestination(intendedDestination);
+
+            InetAddress localAddress = SipActivator
+                .getNetworkAddressManagerService().getLocalHost(
+                    targetAddress.getAddress());
+
+            int localPort = 5060;
+            String transport = getDefaultTransport();
+            if (ListeningPoint.TCP.equalsIgnoreCase(transport)
+                || ListeningPoint.TLS.equalsIgnoreCase(transport))
+            {
+                InetSocketAddress localSockAddr
+                    = sipStackSharing.getLocalAddressForDestination(
+                                    targetAddress.getAddress(),
+                                    targetAddress.getPort(),
+                                    localAddress,
+                                    transport);
+                localPort = localSockAddr.getPort();
+            }
+
+            ViaHeader viaHeader = headerFactory.createViaHeader(
+                localAddress.getHostAddress(),
+                localPort,
+                transport,
+                null
+                );
+            viaHeaders.add(viaHeader);
+            if (logger.isDebugEnabled())
+                logger.debug("generated via headers:" + viaHeader);
+            return viaHeaders;
+        }
+        catch (ParseException ex)
+        {
+            logger.error(
+                "A ParseException occurred while creating Via Headers!", ex);
+            throw new OperationFailedException(
+                "A ParseException occurred while creating Via Headers!"
+                ,OperationFailedException.INTERNAL_ERROR
+                ,ex);
+        }
+        catch (InvalidArgumentException ex)
+        {
+            logger.error(
+                "Unable to create a via header for port "
+                + sipStackSharing.getLP(ListeningPoint.UDP).getPort(),
+                ex);
+            throw new OperationFailedException(
+                "Unable to create a via header for port "
+                + sipStackSharing.getLP(ListeningPoint.UDP).getPort()
+                ,OperationFailedException.INTERNAL_ERROR
+                ,ex);
+        }
+        catch (java.io.IOException ex)
+        {
+            logger.error(
+                "Unable to create a via header for port "
+                + sipStackSharing.getLP(ListeningPoint.UDP).getPort(),
+                ex);
+            throw new OperationFailedException(
+                "Unable to create a via header for port "
+                + sipStackSharing.getLP(ListeningPoint.UDP).getPort()
+                ,OperationFailedException.NETWORK_FAILURE
+                ,ex);
+        }
     }
 
     /**
@@ -1487,7 +1565,7 @@ public class ProtocolProviderServiceSipImpl
 
             Address contactAddress = addressFactory.createAddress( contactURI );
 
-            String ourDisplayName = getOurDisplayName();
+            String ourDisplayName = accountID.getUserID();
             if (ourDisplayName != null)
             {
                 contactAddress.setDisplayName(ourDisplayName);
@@ -2504,6 +2582,16 @@ public class ProtocolProviderServiceSipImpl
             uriStr = "sip:" + uriStr;
         }
 
+        if(uriStr.indexOf("+") != -1 && Boolean.parseBoolean(getAccountID()
+            .getAccountProperties().get(ProtocolProviderFactory.PLUS_DISABLED)))
+        {
+            uriStr = uriStr.replace("+","");
+        }
+        String accountAddress = getAccountID().getAccountProperties()
+            .get(ProtocolProviderFactory.ACCOUNT_ADDRESS);
+        uriStr += "@" + accountAddress;
+        uriStr += ";user=phone";
+
         Address toAddress = getAddressFactory().createAddress(uriStr);
 
         return toAddress;
@@ -2529,7 +2617,55 @@ public class ProtocolProviderServiceSipImpl
     public InetSocketAddress getIntendedDestination(Address destination)
         throws IllegalArgumentException
     {
+        javax.sip.address.URI uri = destination.getURI();
+        if ( uri instanceof TelURL ) {
+            return getIntendedDestination((TelURL)uri);
+        }
         return getIntendedDestination((SipURI)destination.getURI());
+    }
+
+    public InetSocketAddress getIntendedDestination(TelURL destination)
+        throws IllegalArgumentException
+    {
+        // Address
+        InetSocketAddress destinationInetAddress = null;
+        InetSocketAddress outboundProxy = connection.getAddress();
+
+        if(outboundProxy != null)
+        {
+            if (logger.isTraceEnabled())
+                logger.trace("Will use proxy address");
+            destinationInetAddress = outboundProxy;
+        }
+        else
+        {
+            String transport = getDefaultTransport();
+            int port = ListeningPoint.PORT_5060;
+
+            ProxyConnection tempConn = new AutoProxyConnection(
+                (SipAccountIDImpl)getAccountID(),
+                ((SipAccountIDImpl)getAccountID()).getAccountPropertyString("RouteAddress"),
+                port,
+                transport);
+            try
+            {
+                if(tempConn.getNextAddress())
+                    destinationInetAddress = tempConn.getAddress();
+                else
+                    throw new IllegalArgumentException(((SipAccountIDImpl)getAccountID()).getAccountPropertyString("RouteAddress")
+                        + " could not be resolved to an internet address.");
+            }
+            catch (DnssecException e)
+            {
+                logger.error("unable to obtain next hop address", e);
+            }
+        }
+
+        if(logger.isDebugEnabled())
+            logger.debug("Returning address " + destinationInetAddress
+                 + " for destination " + ((SipAccountIDImpl)getAccountID()).getAccountPropertyString("RouteAddress"));
+
+        return destinationInetAddress;
     }
 
     /**

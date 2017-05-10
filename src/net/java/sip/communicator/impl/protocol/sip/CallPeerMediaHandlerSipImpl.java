@@ -170,6 +170,11 @@ public class CallPeerMediaHandlerSipImpl
         String userName
             = getPeer().getProtocolProvider().getAccountID().getUserID();
 
+        //Dynamic Owner/Creator
+        Map<String, String> props = getPeer().getProtocolProvider().getAccountID().getAccountProperties();
+        if (props != null && props.containsKey("fromNumber"))
+            userName = props.get("fromNumber");
+
         SessionDescription sDes
             = SdpUtils.createSessionDescription(
                     getTransportManager().getLastUsedLocalHost(),
@@ -715,7 +720,7 @@ public class CallPeerMediaHandlerSipImpl
                 // update stream
                 MediaStream stream = getStream(MediaType.VIDEO);
 
-                if(stream != null)
+                if(stream != null && dev != null)
                 {
                     List<MediaFormat> fmts = intersectFormats(
                         getLocallySupportedFormats(dev),
@@ -766,7 +771,7 @@ public class CallPeerMediaHandlerSipImpl
 
             // RTCP XR
             String rtcpxr;
-            
+
             try
             {
                 /*
@@ -780,7 +785,7 @@ public class CallPeerMediaHandlerSipImpl
                 {
                     /*
                      * However, we support the receiving and sending of VoIP
-                     * Metrics Report Block only. 
+                     * Metrics Report Block only.
                      */
                     if (rtcpxr.contains(
                             RTCPExtendedReport.VoIPMetricsReportBlock
@@ -1027,7 +1032,7 @@ public class CallPeerMediaHandlerSipImpl
                  * offerer is the DTLS server and recommends setup:active to the
                  * answerer i.e the answerer is the DTLS client. If the answerer
                  * chooses setup:passive i.e. the answerer is the DTLS server,
-                 * the offerer has to become the DTLS client. 
+                 * the offerer has to become the DTLS client.
                  */
                 String setup;
 

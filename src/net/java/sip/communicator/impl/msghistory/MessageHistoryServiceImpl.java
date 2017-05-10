@@ -1071,7 +1071,7 @@ public class MessageHistoryServiceImpl
         // We're adding a property change listener in order to
         // listen for modifications of the isMessageHistoryEnabled property.
         msgHistoryPropListener = new MessageHistoryPropertyChangeListener();
-        
+
         // Load the "IS_MESSAGE_HISTORY_ENABLED" property.
         isHistoryLoggingEnabled = configService.getBoolean(
             MessageHistoryService.PNAME_IS_MESSAGE_HISTORY_ENABLED,
@@ -2673,6 +2673,12 @@ public class MessageHistoryServiceImpl
             return chatRoom.getParentProvider();
         }
 
+        @Override
+        public String getRoutingId()
+        {
+            return null;
+        }
+
         public String getContactAddress()
         {
             return name;
@@ -3019,7 +3025,7 @@ public class MessageHistoryServiceImpl
         if(this.messageSourceService != null)
             this.messageSourceService.eraseLocallyStoredHistory(room);
     }
-    
+
     /**
      * Returns <code>true</code> if the "IS_MESSAGE_HISTORY_ENABLED"
      * property is true, otherwise - returns <code>false</code>.

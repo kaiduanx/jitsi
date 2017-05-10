@@ -101,6 +101,16 @@ public class ColibriConferenceIQ
     private String id;
 
     /**
+     * The room name of the conference represented by this IQ.
+     */
+    private String roomName;
+
+    /**
+     * The misc parameters of the conference represented by this IQ.
+     */
+    private MiscPacketExtension misc;
+
+    /**
      * Media recording.
      */
     private Recording recording;
@@ -164,6 +174,26 @@ public class ColibriConferenceIQ
             channelBundles.contains(channelBundle)
                ? false
                : channelBundles.add(channelBundle);
+    }
+
+    /**
+     * Add a <tt>MiscPacketExtension</tt> to this <tt>ColibriConferenceIQ</tt>.
+     * @param misc the <tt>MiscPacketExtension</tt> to add.
+     */
+    public boolean addMisc(MiscPacketExtension misc)
+    {
+        this.misc = misc;
+        return true;
+    }
+
+    /**
+     * Gets the value of the MiscPacketExtension.
+     *
+     * @return the value of the MiscPacketExtension.
+     */
+    public MiscPacketExtension getMisc()
+    {
+        return misc;
     }
 
     /**
@@ -297,6 +327,8 @@ public class ColibriConferenceIQ
                 xml.append(new GracefulShutdown().toXML());
 
             xml.append("</").append(ELEMENT_NAME).append('>');
+            if (misc != null)
+                xml.append(misc.toXML());
         }
         return xml.toString();
     }
@@ -496,7 +528,7 @@ public class ColibriConferenceIQ
          * <tt>ColibriConferenceIQ.Channel</tt>.
          *
          * @deprecated The attribute is supported for the purposes of
-         * compatibility with legacy versions of Jitsi and Jitsi Videobridge. 
+         * compatibility with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public static final String HOST_ATTR_NAME = "host";
@@ -543,7 +575,7 @@ public class ColibriConferenceIQ
          * <tt>ColibriConferenceIQ.Channel</tt>.
          *
          * @deprecated The attribute is supported for the purposes of
-         * compatibility with legacy versions of Jitsi and Jitsi Videobridge. 
+         * compatibility with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public static final String RTCP_PORT_ATTR_NAME = "rtcpport";
@@ -558,7 +590,7 @@ public class ColibriConferenceIQ
          * <tt>ColibriConferenceIQ.Channel</tt>.
          *
          * @deprecated The attribute is supported for the purposes of
-         * compatibility with legacy versions of Jitsi and Jitsi Videobridge. 
+         * compatibility with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public static final String RTP_PORT_ATTR_NAME = "rtpport";
@@ -579,7 +611,7 @@ public class ColibriConferenceIQ
          * The host of the <tt>channel</tt> represented by this instance.
          *
          * @deprecated The field is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         private String host;
@@ -626,7 +658,7 @@ public class ColibriConferenceIQ
          * The RTCP port of the <tt>channel</tt> represented by this instance.
          *
          * @deprecated The field is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         private int rtcpPort;
@@ -643,7 +675,7 @@ public class ColibriConferenceIQ
          * The RTP port of the <tt>channel</tt> represented by this instance.
          *
          * @deprecated The field is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         private int rtpPort;
@@ -832,7 +864,7 @@ public class ColibriConferenceIQ
          * has been allocated
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public String getHost()
@@ -925,7 +957,7 @@ public class ColibriConferenceIQ
          * for the purposes of transmitting RTCP packets
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public int getRTCPPort()
@@ -954,7 +986,7 @@ public class ColibriConferenceIQ
          * for the purposes of transmitting RTP packets
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public int getRTPPort()
@@ -1252,7 +1284,7 @@ public class ColibriConferenceIQ
          * instance has been allocated
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public void setHost(String host)
@@ -1316,7 +1348,7 @@ public class ColibriConferenceIQ
          * <tt>channel</tt> for the purposes of transmitting RTCP packets
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public void setRTCPPort(int rtcpPort)
@@ -1359,7 +1391,7 @@ public class ColibriConferenceIQ
          * <tt>channel</tt> for the purposes of transmitting RTP packets
          *
          * @deprecated The method is supported for the purposes of compatibility
-         * with legacy versions of Jitsi and Jitsi Videobridge. 
+         * with legacy versions of Jitsi and Jitsi Videobridge.
          */
         @Deprecated
         public void setRTPPort(int rtpPort)

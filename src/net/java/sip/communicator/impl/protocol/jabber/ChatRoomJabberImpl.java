@@ -587,7 +587,7 @@ public class ChatRoomJabberImpl
      * @throws OperationFailedException with the corresponding code if an
      *   error occurs while joining the room.
      */
-    public void joinAs(String nickname, byte[] password)
+    public void joinAs(String nickname, byte[] password, MiscPacketExtension misc)
         throws OperationFailedException
     {
         this.assertConnected();
@@ -595,6 +595,29 @@ public class ChatRoomJabberImpl
         this.nickname = getNickName(StringUtils.parseName(nickname));
         if(this.nickname.length() == 0)
             this.nickname = nickname;
+
+        Map<String, String> miscMap = null;
+        if (misc != null) {
+            miscMap = new HashMap<String, String>();
+            String event = misc.getEvent();
+            String traceId = misc.getTraceId();
+            String rootNodeId = misc.getRootNodeId();
+            String childNodeId = misc.getChildNodeId();
+            String roomToken = misc.getRoomToken();
+            String roomTokenExpiryTime = misc.getRoomTokenExpiryTime();
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(event))
+                miscMap.put("event", event);
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(traceId))
+                miscMap.put("traceid", traceId);
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(rootNodeId))
+                miscMap.put("rootnodeid", rootNodeId);
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(childNodeId))
+                miscMap.put("childnodeid", childNodeId);
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(roomToken))
+                miscMap.put("roomtoken", roomToken);
+            if(!org.jitsi.util.StringUtils.isNullOrEmpty(roomTokenExpiryTime))
+                miscMap.put("roomtokenexpirytime", roomTokenExpiryTime);
+        }
 
         try
         {
@@ -613,9 +636,9 @@ public class ChatRoomJabberImpl
                         new PacketTypeFilter(
                             org.jivesoftware.smack.packet.Presence.class)));
                 if(password == null)
-                    multiUserChat.join(nickname);
+                    multiUserChat.join(nickname, "", miscMap);
                 else
-                    multiUserChat.join(nickname, new String(password));
+                    multiUserChat.join(nickname, new String(password), miscMap);
             }
 
             ChatRoomMemberJabberImpl member
@@ -726,7 +749,13 @@ public class ChatRoomJabberImpl
     public void joinAs(String nickname)
         throws OperationFailedException
     {
-        this.joinAs(nickname, null);
+        this.joinAs(nickname, null, null);
+    }
+
+    public void joinAs(String nickname, byte[] password)
+        throws OperationFailedException
+    {
+        this.joinAs(nickname, password, null);
     }
 
     /**
