@@ -18,6 +18,7 @@
 package net.java.sip.communicator.service.protocol.media;
 
 import java.net.*;
+import java.io.IOException;
 
 import net.java.sip.communicator.service.netaddr.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -325,9 +326,8 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
         DatagramSocket rtpSocket = null;
         try
         {
-            rtpSocket = nam.createDatagramSocket(
-                localHostForPeer, portTracker.getPort(),
-                portTracker.getMinPort(), portTracker.getMaxPort());
+            rtpSocket = createDatagramSocketForRTP(nam,
+                localHostForPeer, portTracker);
         }
         catch (Exception exc)
         {
@@ -335,10 +335,6 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
                 "Failed to allocate the network ports necessary for the call.",
                 OperationFailedException.INTERNAL_ERROR, exc);
         }
-
-        //make sure that next time we don't try to bind on occupied ports
-        //also, refuse validation in case someone set the tracker range to 1
-        portTracker.setNextPort( rtpSocket.getLocalPort() + 1, false);
 
         //create the RTCP socket, preferably on the port following our RTP one.
         DatagramSocket rtcpSocket = null;
@@ -687,6 +683,69 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
                         dscpPropertyName,
                         0)
                     << 2);
+    }
+
+    private DatagramSocket createDatagramSocketForRTP(NetworkAddressManagerService nam,
+                                                      InetAddress localHostForPeer,
+                                                      PortTracker portTracker)
+        throws IllegalArgumentException,
+               IOException,
+               BindException
+    {
+        String propertyName = 
+            "net.java.sip.communicator.impl.protocol.RTP_EVEN_PORT";
+        
+        boolean evenPort = 
+            ProtocolMediaActivator.getConfigurationService().getBoolean(
+                propertyName, false);
+        logger.info("Create RTP even port: " + evenPort);
+        if (evenPort)
+        {
+            return createDatagramSocketOnEvenPort(nam, localHostForPeer, portTracker);
+        }
+        else
+        {
+            DatagramSocket rtpSocket = nam.createDatagramSocket(localHostForPeer,
+                portTracker.getPort(),
+                portTracker.getMinPort(),
+                portTracker.getMaxPort());
+            //make sure that next time we don't try to bind on occupied ports
+            //also, refuse validation in case someone set the tracker range to 1
+            portTracker.setNextPort(rtpSocket.getLocalPort() + 1, false);
+            return rtpSocket;
+        }
+        
+    }
+
+    private DatagramSocket createDatagramSocketOnEvenPort(NetworkAddressManagerService nam, 
+                                                          InetAddress localHostForPeer,
+                                                          PortTracker portTracker)
+        throws IllegalArgumentException,
+               IOException,
+               BindException
+    {
+        DatagramSocket rtpSocket = null;
+        do
+        {
+            // createDatagramSocket will throw exceptions on retries exceeds limit
+            rtpSocket = nam.createDatagramSocket(localHostForPeer,
+                portTracker.getPort(),
+                portTracker.getMinPort(),
+                portTracker.getMaxPort());
+            //make sure that next time we don't try to bind on occupied ports
+            //also, refuse validation in case someone set the tracker range to 1
+            portTracker.setNextPort(rtpSocket.getLocalPort() + 1, false);
+            int localPort = rtpSocket.getLocalPort();
+            if (localPort % 2 != 0)
+            {
+                rtpSocket.close();
+                rtpSocket = null;
+            }
+            else
+            {
+                return rtpSocket;
+            }
+        } while (true);
     }
 
     /**
