@@ -492,7 +492,9 @@ public class SdpUtils
         }
 
         // extmap: attributes
-        if (rtpExtensions != null && rtpExtensions.size() > 0)
+        boolean rtpExtensionsEnabled = SipActivator.getConfigurationService().
+            getBoolean("net.java.sip.communicator.impl.protocol.RTP_EXTENSIONS_ENABLED", true);
+        if (rtpExtensionsEnabled && rtpExtensions != null && rtpExtensions.size() > 0)
         {
             for (RTPExtension extension : rtpExtensions)
             {

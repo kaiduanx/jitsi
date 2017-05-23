@@ -279,11 +279,18 @@ public class CallPeerMediaHandlerSipImpl
 
                             if (rtcpxr == null)
                             {
-                                md.setAttribute(
+                                boolean metric
+                                    = SipActivator.getConfigurationService().getBoolean(
+                                        "net.java.sip.communicator.impl.protocol.VOIP_METRICS_ENABLED",
+                                        true);
+                                if (metric)
+                                {
+                                    md.setAttribute(
                                         RTCPExtendedReport.SDP_ATTRIBUTE,
                                         RTCPExtendedReport
                                             .VoIPMetricsReportBlock
                                                 .SDP_PARAMETER);
+                                }
                             }
 
                             int ptimeSetting

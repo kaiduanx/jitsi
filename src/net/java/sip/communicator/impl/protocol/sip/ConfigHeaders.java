@@ -161,9 +161,8 @@ public class ConfigHeaders
         CSeqHeader cSeqHeader = (CSeqHeader) request.getHeader(SIPHeaderNames.CSEQ);
         Long seqNumber = cSeqHeader.getSeqNumber();
 
-        // !XKD! Comment out this for now
-        //DNSServerLookup lookup = new DNSServerLookup();
-        //props.put("LookupServer", lookup.nsLookUp());
+        DNSServerLookup lookup = new DNSServerLookup();
+        props.put("LookupServer", lookup.nsLookUp());
 
         // process the found custom headers
         for(Map<String, String> headerValues : headers.values())
