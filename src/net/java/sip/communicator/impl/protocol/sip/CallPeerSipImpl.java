@@ -469,6 +469,7 @@ public class CallPeerSipImpl
 
         try
         {
+            addComcastHeaders(response);
             serverTransaction.sendResponse(response);
         }
         catch (Exception e)
@@ -518,6 +519,7 @@ public class CallPeerSipImpl
                 .getHeaderFactory().createContentTypeHeader(
                                 "application", "sdp"));
 
+            addComcastHeaders(response);
             if (logger.isTraceEnabled())
                 logger.trace("will send an OK response: " + response);
             serverTransaction.sendResponse(response);
@@ -569,6 +571,7 @@ public class CallPeerSipImpl
         if (ok != null)
             try
             {
+                addComcastHeaders(ok);
                 byeTran.sendResponse(ok);
                 if (logger.isDebugEnabled())
                     logger.debug("sent response " + ok);
@@ -634,6 +637,7 @@ public class CallPeerSipImpl
         try
         {
             Response ok = messageFactory.createResponse(Response.OK, cancel);
+            addComcastHeaders(ok);
             serverTransaction.sendResponse(ok);
 
             if (logger.isDebugEnabled())
@@ -667,6 +671,7 @@ public class CallPeerSipImpl
             Response requestTerminated = messageFactory
                 .createResponse(Response.REQUEST_TERMINATED, invite);
 
+            addComcastHeaders(requestTerminated);
             inviteTran.sendResponse(requestTerminated);
             if (logger.isDebugEnabled())
                 logger.debug("sent request terminated response:\n"
@@ -806,7 +811,9 @@ public class CallPeerSipImpl
         {
             // Send the ACK. Do it now since we already got all the info we need
             // and processSdpAnswer() can take a while (patch by Michael Koch)
-            getProtocolProvider().sendAck(clientTransaction);
+            CallSipImpl call = (CallSipImpl) getCall();
+            String comcastAppDomain = call.getComcastAppDomain();
+            getProtocolProvider().sendAck(clientTransaction, comcastAppDomain);
         }
         catch (InvalidArgumentException ex)
         {
@@ -1105,6 +1112,7 @@ public class CallPeerSipImpl
 
         try
         {
+            addComcastHeaders(busyHere);
             serverTransaction.sendResponse(busyHere);
             if (logger.isDebugEnabled())
                 logger.debug("sent response:\n" + busyHere);
@@ -1139,6 +1147,8 @@ public class CallPeerSipImpl
         try
         {
             Request cancel = clientTransaction.createCancel();
+
+            addComcastHeaders(cancel);
             ClientTransaction cancelTransaction =
                 getJainSipProvider().getNewClientTransaction(
                     cancel);
@@ -1170,6 +1180,8 @@ public class CallPeerSipImpl
         Dialog dialog = getDialog();
 
         Request bye = messageFactory.createRequest(dialog, Request.BYE);
+
+        addComcastHeaders(bye);
 
         if(reasonCode != HANGUP_REASON_NORMAL_CLEARING && reason != null)
         {
@@ -1356,6 +1368,7 @@ public class CallPeerSipImpl
 
         try
         {
+            addComcastHeaders(ok);
             serverTransaction.sendResponse(ok);
             if (logger.isDebugEnabled())
                 logger.debug("sent response\n" + ok);
@@ -1459,6 +1472,7 @@ public class CallPeerSipImpl
                     logger);
         }
 
+        addComcastHeaders(invite);
         getProtocolProvider().sendInDialogRequest(
                 getJainSipProvider(), invite, dialog);
     }
@@ -1737,5 +1751,25 @@ public class CallPeerSipImpl
         }
 
         return MediaDirection.INACTIVE;
+    }
+
+    private void addComcastHeaders(Request request)
+    {
+        CallSipImpl call = (CallSipImpl) getCall();
+        if (call == null || request == null)
+        {
+            return;
+        }
+        call.addComcastHeaders(request);
+    }
+
+    private void addComcastHeaders(Response response)
+    {
+        CallSipImpl call = (CallSipImpl) getCall();
+        if (call == null || response == null)
+        {
+            return;
+        }
+        call.addComcastHeaders(response);
     }
 }

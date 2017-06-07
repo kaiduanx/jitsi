@@ -81,6 +81,10 @@ public class CallSipImpl
      */
     public static final String EXTRA_HEADER_VALUE = "EXTRA_HEADER_VALUE";
 
+    public static final String COMCAST_APP_DOMAIN_HEADER_NAME = "Comcast-App-Domain";
+
+    public static final String COMCAST_DIRECTION_HEADER_NAME = "Comcast-Direction";
+
     /**
      * Maximum number of retransmissions that will be sent.
      */
@@ -119,6 +123,10 @@ public class CallSipImpl
     * retransmissions of response 180.
     */
     private final int retransmitsRingingInterval;
+
+    private boolean isOutgoing;
+
+    private String comcastAppDomain;
 
     /**
      * Crates a CallSipImpl instance belonging to <tt>sourceProvider</tt> and
@@ -584,6 +592,14 @@ public class CallSipImpl
                 (fromURI.toString().contains("+") ? "+" : "") + telURL.getPhoneNumber());
         }
 
+        // Get comcast app domain from invite
+        SIPHeader fromRoutingId = (SIPHeader) invite.getHeader("From-Routing-Id");
+        if (fromRoutingId != null)
+        {
+            //+11234567@iristest.comcast.comcast
+            this.comcastAppDomain = fromRoutingId.getValue().split("@")[1];
+        }
+
         OperationSetJitsiMeetToolsSipImpl jitsiMeetTools
             = (OperationSetJitsiMeetToolsSipImpl) getProtocolProvider()
                     .getOperationSet(OperationSetJitsiMeetTools.class);
@@ -599,6 +615,8 @@ public class CallSipImpl
             if( CallPeerState.INCOMING_CALL.equals(peer.getState()) )
             {
                 response = messageFactory.createResponse(Response.RINGING, invite);
+
+                addComcastHeaders(response);
 
                 serverTran.sendResponse(response);
 
@@ -706,6 +724,59 @@ public class CallSipImpl
         this.initialQualityPreferences = qualityPreferences;
     }
 
+    public String getComcastAppDomain()
+    {
+        return this.comcastAppDomain;
+    }
+
+    public void addComcastHeaders(Request request)
+    {
+        try
+        {
+            if (this.isOutgoing)
+            {
+                Header direction = getProtocolProvider().getHeaderFactory()
+                    .createHeader(COMCAST_DIRECTION_HEADER_NAME, "outgoing");
+                request.setHeader(direction);
+            }
+            if (this.comcastAppDomain != null)
+            {
+                Header appdomain = getProtocolProvider().getHeaderFactory()
+                    .createHeader(COMCAST_APP_DOMAIN_HEADER_NAME,
+                        this.comcastAppDomain);
+                request.setHeader(appdomain);
+            }
+        }
+        catch (java.text.ParseException e)
+        {
+            logger.info("Exception in adding comcast headers: " + e);
+        }
+    }
+
+    public void addComcastHeaders(Response response)
+    {
+        try
+        {
+            if (this.isOutgoing)
+            {
+                Header direction = getProtocolProvider().getHeaderFactory()
+                    .createHeader(COMCAST_DIRECTION_HEADER_NAME, "outgoing");
+                response.setHeader(direction);
+            }
+            if (this.comcastAppDomain != null)
+            {
+                Header appdomain = getProtocolProvider().getHeaderFactory()
+                    .createHeader(COMCAST_APP_DOMAIN_HEADER_NAME,
+                        this.comcastAppDomain);
+                response.setHeader(appdomain);
+            }
+        }
+        catch (java.text.ParseException e)
+        {
+            logger.info("Exception in adding comcast headers: " + e);
+        }
+    }
+
     /**
      * A place where we can handle any headers we need for requests
      * and responses.
@@ -729,6 +800,16 @@ public class CallSipImpl
             Header header = getProtocolProvider().getHeaderFactory()
                 .createHeader((String) name, (String) value);
             message.setHeader(header);
+            if (COMCAST_APP_DOMAIN_HEADER_NAME.equalsIgnoreCase((String) name))
+            {
+                logger.info("comcast-app-domain: " + (String) value);
+                this.comcastAppDomain = (String) value;
+            }
+            if (COMCAST_DIRECTION_HEADER_NAME.equalsIgnoreCase((String) name))
+            {
+                logger.info("comcast-dirtection: " + (String) value);
+                this.isOutgoing = true;
+            }
 
             extraHeaderIx++;
             name = getData(EXTRA_HEADER_NAME + "." + extraHeaderIx);

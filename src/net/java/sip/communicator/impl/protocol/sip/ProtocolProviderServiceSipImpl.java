@@ -2265,10 +2265,30 @@ public class ProtocolProviderServiceSipImpl
      * INVITE or if the Method that created the Dialog is not an INVITE ( for
      * example SUBSCRIBE) or if we fail to send the INVITE for whatever reason.
      */
-    public void sendAck(ClientTransaction clientTransaction)
+    public void sendAck(ClientTransaction clientTransaction, String appDomain)
         throws SipException, InvalidArgumentException
     {
             Request ack = messageFactory.createAck(clientTransaction);
+
+            try
+            {
+                // add direction/comcast-app-domain header
+                Header direction = this.headerFactory
+                    .createHeader(CallSipImpl.COMCAST_DIRECTION_HEADER_NAME,
+                        "outgoing");
+                ack.setHeader(direction);
+                if (appDomain != null)
+                {
+                    Header appdomain = this.headerFactory
+                        .createHeader(CallSipImpl.COMCAST_APP_DOMAIN_HEADER_NAME,
+                            appDomain);
+                    ack.setHeader(appdomain);
+                }
+            }
+            catch (java.text.ParseException e)
+            {
+                logger.info("Exception in adding comcast headers: " + e);
+            }
 
             clientTransaction.getDialog().sendAck(ack);
     }

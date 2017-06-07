@@ -161,8 +161,10 @@ public class ConfigHeaders
         CSeqHeader cSeqHeader = (CSeqHeader) request.getHeader(SIPHeaderNames.CSEQ);
         Long seqNumber = cSeqHeader.getSeqNumber();
 
+        // For example accountAddress: ims.comcast.net
+        String accountAddress = props.get(ProtocolProviderFactory.ACCOUNT_ADDRESS);
         DNSServerLookup lookup = new DNSServerLookup();
-        props.put("LookupServer", lookup.nsLookUp());
+        props.put("LookupServer", lookup.nsLookUp(accountAddress));
 
         // process the found custom headers
         for(Map<String, String> headerValues : headers.values())
